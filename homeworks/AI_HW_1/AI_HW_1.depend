@@ -1,0 +1,21 @@
+# depslib dependency file v1.0
+1730200960 source:c:\projects\university\ai_all\homeworks\homework_1.cpp
+	<iostream>
+	<chrono>
+	<vector>
+	<memory>
+	<cmath>
+	<unordered_map>
+	<unordered_set>
+	<stack>
+
+1730280938 source:c:\projects\university\ai_all\homeworks\ai_hw_1\homework_1.cpp
+	<iostream>
+	<chrono>
+	<vector>
+	<memory>
+	<cmath>
+	<unordered_map>
+	<unordered_set>
+	<stack>
+

@@ -1,0 +1,13 @@
+# depslib dependency file v1.0
+1730808941 source:c:\projects\university\ai_all\homeworks\ai_hw_2\src.cpp
+	<vector>
+	<iostream>
+	<random>
+	<chrono>
+	<iomanip>
+
+1730724668 source:c:\users\amakedonski\downloads\hw3.cpp
+	<iostream>
+	<vector>
+	<random>
+
