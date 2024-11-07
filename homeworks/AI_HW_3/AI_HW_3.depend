@@ -1,0 +1,11 @@
+# depslib dependency file v1.0
+1730984785 source:c:\projects\university\ai_4_course\homeworks\ai_hw_3\src.cpp
+	<iostream>
+	<string>
+	<vector>
+	<random>
+	<cmath>
+	<algorithm>
+	<float.h>
+	<unordered_set>
+
