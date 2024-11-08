@@ -11,3 +11,10 @@
 	<vector>
 	<random>
 
+1730808941 source:c:\projects\university\ai_4_course\homeworks\ai_hw_2\src.cpp
+	<vector>
+	<iostream>
+	<random>
+	<chrono>
+	<iomanip>
+

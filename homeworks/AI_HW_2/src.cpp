@@ -12,11 +12,11 @@ struct NQueens
 {
     int64_t N;
     vector<int64_t> queen_current_row;
-#if not FAST_SOLUTION // this is only for memory purposes. Might cause heap exhaustion with bug numbers.
+#if !FAST_SOLUTION // this is only for memory protection purposes. Might cause heap exhaustion with big numbers.
     vector<int64_t> row_total_queens;
     vector<int64_t> diag1_total_queens;
     vector<int64_t> diag2_total_queens;
-#endif // not FAST_SOLUTION
+#endif // !FAST_SOLUTION
 
     mt19937 rng;
     uniform_int_distribution<mt19937::result_type> distN;
@@ -33,32 +33,32 @@ private:
     void place_queen(int64_t row, int64_t col) // no index guard, assume it's right!
     {
         this->queen_current_row[col] = row;
-#if not FAST_SOLUTION
+#if !FAST_SOLUTION
         this->row_total_queens[row]++;
         this->diag1_total_queens[col - row + this->N - 1]++;
         this->diag2_total_queens[col + row]++;
-#endif // not FAST_SOLUTION
+#endif // !FAST_SOLUTION
     }
 
     void remove_queen(int64_t col) // no guard, assume it's right!
     {
         int64_t row = this->queen_current_row[col];
         this->queen_current_row[col] = -1;
-#if not FAST_SOLUTION
+#if !FAST_SOLUTION
         this->row_total_queens[row]--;
         this->diag1_total_queens[col - row + this->N - 1]--;
         this->diag2_total_queens[col + row]--;
-#endif // not FAST_SOLUTION
+#endif // !FAST_SOLUTION
     }
 
     int64_t get_place_weight(int64_t row, int64_t col, bool count_current_queen = true) const
     {
         int64_t weight = 0;
-#if not FAST_SOLUTION
+#if !FAST_SOLUTION
         weight += this->diag1_total_queens[col - row + this->N - 1] - (count_current_queen ? 1 : 0);
         weight += this->diag2_total_queens[col + row] - (count_current_queen ? 1 : 0);
         weight += row_total_queens[row] - (count_current_queen ? 1 : 0);
-#endif // not FAST_SOLUTION
+#endif // !FAST_SOLUTION
         return weight;
     }
 
@@ -127,11 +127,11 @@ public:
     void initialize_queens()
     {
         this->queen_current_row = vector<int64_t>(N, -1);
-#if not FAST_SOLUTION
+#if !FAST_SOLUTION
         this->row_total_queens = vector<int64_t>(N, 0);
         this->diag1_total_queens = vector<int64_t>(2*N - 1, 0);
         this->diag2_total_queens = vector<int64_t>(2*N - 1, 0);
-#endif // not FAST_SOLUTION
+#endif // !FAST_SOLUTION
 
 #if FAST_SOLUTION
         this->_fill_knight();
@@ -149,7 +149,7 @@ public:
         {
             cout << this->queen_current_row[col] << " ";
         }
-#if not FAST_SOLUTION
+#if !FAST_SOLUTION
         cout << endl << "rows: ";
         for (int row = 0; row < this->N; row++)
         {
@@ -165,7 +165,7 @@ public:
         {
             cout << this->diag2_total_queens[diag] << " ";
         }
-#endif // not FAST_SOLUTION
+#endif // !FAST_SOLUTION
         cout << endl;
     }
 

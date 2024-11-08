@@ -15,9 +15,11 @@ typedef vector<uint64_t> Path;
 #define TEST_PRINT 0
 #define TEST_CITIES 1
 
-/* if 1 will use PMX, if 0 TP*/
+/* Will use all given crossovers. Will generate more children in more crossovers are enabled. If none are, parents will just be copied.*/
+#define USE_OP_CROSSOVER 1
 #define USE_TP_CROSSOVER 1
-/* if 1 will use Roulette, if 0 Rank-based*/
+#define USE_PMX_CROSSOVER 1
+/* if 1 will use Roulette, if 0 - Rank-based*/
 #define USE_ROULETTE_SELECTION 0
 
 random_device dev;
@@ -72,6 +74,7 @@ public:
     void print_path_names(const Path& path) const;
     void print_init_info() const;
     uint64_t get_best_path_index(const vector<Path>& paths) const;
+    uint64_t get_worst_path_index(const vector<Path>& paths) const;
     double path_length(const Path& path) const;
     Path generate_random_path() const;
     vector<Path> generate_random_paths(uint64_t size) const;
@@ -82,6 +85,8 @@ public:
     pair<Path, Path> PMX_crossover(const Path& parent1, const Path& parent2) const;
     /* Two point crossover */
     pair<Path, Path> TP_crossover(const Path& parent1, const Path& parent2) const;
+    /* One point crossover */
+    pair<Path, Path> OP_crossover(const Path& parent1, const Path& parent2) const;
     void mutate(Path& path) const;
     void mutate_paths(vector<Path>& paths) const;
     Path find_solution() const;
@@ -120,6 +125,23 @@ uint64_t TravelingSalesmanSolver::get_best_path_index(const vector<Path>& paths)
         if (length < min)
         {
             min = length;
+            index = i;
+        }
+    }
+    return index;
+}
+
+uint64_t TravelingSalesmanSolver::get_worst_path_index(const vector<Path>& paths) const
+{
+    double max = this->path_length(paths[0]); // assume paths has something. xD
+    uint64_t index = 0;
+    for (uint64_t i = 1; i < paths.size(); i++)
+    {
+        double length = this->path_length(paths[i]);
+        //cout << min << " > " << length << endl;
+        if (length > max)
+        {
+            max = length;
             index = i;
         }
     }
@@ -209,10 +231,14 @@ vector<Path> TravelingSalesmanSolver::roulette_selection(const vector<Path>& pat
     vector<double> cumulative_fitness(paths.size() + 1, 0.0);
     unordered_set<uint64_t> selected_indices;
 
+    double min_path_length = this->path_length(paths[this->get_best_path_index(paths)]);
+    double max_path_length = this->path_length(paths[this->get_worst_path_index(paths)]);
+
     double total_fitness = 0;
     for (uint64_t i = 0; i < paths.size(); i++)
     {
-        total_fitness += 1.0 / this->path_length(paths[i]);
+        double relative_fitness =(max_path_length - this->path_length(paths[i])) / (max_path_length - min_path_length + 1e-9); // Add small value to avoid division by zero
+        total_fitness += relative_fitness;
         cumulative_fitness[i + 1] = total_fitness;
     }
 
@@ -250,17 +276,28 @@ vector<Path> TravelingSalesmanSolver::generate_children(const vector<Path>& pare
         const Path& parent1 = parents[indices_for_crossover[i]];
         const Path& parent2 = parents[indices_for_crossover[i + 1]];
 
+#if USE_OP_CROSSOVER
+        pair<Path, Path> op_offspring = this->OP_crossover(parent1, parent2);
+        result.push_back(op_offspring.first);
+        result.push_back(op_offspring.second);
+#endif // USE_OP_CROSSOVER
+
 #if USE_TP_CROSSOVER
-        pair<Path, Path> offspring = this->TP_crossover(parent1, parent2);
-#else
-        pair<Path, Path> offspring = this->PMX_crossover(parent1, parent2);
+        pair<Path, Path> tp_offspring = this->TP_crossover(parent1, parent2);
+        result.push_back(tp_offspring.first);
+        result.push_back(tp_offspring.second);
 #endif // USE_TP_CROSSOVER
 
-        Path child1 = {offspring.first};
-        Path child2 = {offspring.second};
+#if USE_PMX_CROSSOVER
+        pair<Path, Path> pmx_offspring = this->PMX_crossover(parent1, parent2);
+        result.push_back(pmx_offspring.first);
+        result.push_back(pmx_offspring.second);
+#endif // USE_PMX_CROSSOVER
 
-        result.push_back(child1);
-        result.push_back(child2);
+#if !(USE_PMX_CROSSOVER || USE_TP_CROSSOVER || USE_OP_CROSSOVER)
+        result.push_back(parent1);
+        result.push_back(parent2);
+#endif // not (USE_PMX_CROSSOVER || USE_TP_CROSSOVER || USE_OP_CROSSOVER)
     }
 
     return result;
@@ -394,6 +431,54 @@ pair<Path, Path> TravelingSalesmanSolver::TP_crossover(const Path& parent1, cons
 
 }
 
+
+pair<Path, Path> TravelingSalesmanSolver::OP_crossover(const Path& parent1, const Path& parent2) const
+{
+    vector<bool> placed_numbers1(parent1.size(), false);
+    vector<bool> placed_numbers2(parent2.size(), false);
+
+    pair<Path, Path> result;
+
+    result.first.resize(parent1.size(), UINT64_MAX);
+    result.second.resize(parent1.size(), UINT64_MAX);
+
+    uint64_t end = get_random_int(0, parent1.size() - 2); /* nothing will change if equal to last. */
+
+    for (uint64_t i = 0; i <= end; i++)
+    {
+        result.first[i] = parent1[i];
+        result.second[i] = parent2[i];
+        placed_numbers1[parent1[i]] = true;
+        placed_numbers2[parent2[i]] = true;
+    }
+
+    uint64_t index = end + 1;
+    for (uint64_t i = 0; i < parent1.size(); i++)
+    {
+        uint64_t gene = parent2[i];
+        if (!placed_numbers1[gene])
+        {
+            result.first[index] = gene;
+            placed_numbers1[gene] = true;
+            index++;
+        }
+    }
+
+    index = end + 1;
+    for (uint64_t i = 0; i < parent2.size(); i++)
+    {
+        uint64_t gene = parent1[i];
+        if (!placed_numbers2[gene])
+        {
+            result.second[index] = gene;
+            placed_numbers2[gene] = true;
+            index++;
+        }
+    }
+
+    return result;
+}
+
 void TravelingSalesmanSolver::mutate(Path& path) const
 {
     int mutation_type = get_random_int(1, 3);
@@ -455,29 +540,28 @@ Path TravelingSalesmanSolver::find_solution() const
 #else
         current_paths = this->rank_based_selection(current_paths, select_winners_size);
 #endif // ROULETTE_SELECTION
-        vector<Path> mutated_children1 = this->generate_children(current_paths);
-        vector<Path> mutated_children2 = this->generate_children(current_paths);
-        vector<Path> children = this->generate_children(current_paths);
+        vector<Path> mutated_children = this->generate_children(current_paths);
+        //vector<Path> children = this->generate_children(current_paths);
         vector<Path> new_generation = this->generate_random_paths(n*NEW_RANDOM_GENERATIONS_SCALAR);
 
-        mutate_paths(mutated_children1);
-        mutate_paths(mutated_children2);
+        mutate_paths(mutated_children);
 
 #if TEST_PRINT
         cout << "Number of winners: " << current_paths.size() << endl;
         cout << "Number of children: " << children.size() << endl;
         cout << "Number of new_generation: " << new_generation.size() << endl;
 #endif // TEST_PRINT
-        current_paths.insert(current_paths.end(), mutated_children1.begin(), mutated_children1.end());
-        current_paths.insert(current_paths.end(), mutated_children2.begin(), mutated_children2.end());
-        current_paths.insert(current_paths.end(), children.begin(), children.end());
+        current_paths.insert(current_paths.end(), mutated_children.begin(), mutated_children.end());
+        //current_paths.insert(current_paths.end(), children.begin(), children.end());
         current_paths.insert(current_paths.end(), new_generation.begin(), new_generation.end());
 
         current_best_index = this->get_best_path_index(current_paths);
         cout << this->path_length(current_paths[current_best_index]) << endl;
     }
 
-    cout << endl << this->path_length(current_paths[current_best_index]) << endl;
+    cout << endl;
+    this->print_path_names(current_paths[current_best_index]);
+    cout << this->path_length(current_paths[current_best_index]) << endl;
 
     return current_paths[current_best_index];
 }
@@ -608,6 +692,22 @@ int main()
 
     children = solver.TP_crossover(first, second);
     cout << endl << "TP crossover info:";
+
+    cout << endl << "Cross between first and second: ";
+    cout << endl << "First crossover: ";
+    for (uint64_t i = 0; i < children.first.size(); i++)
+    {
+        cout << children.first[i] << ", ";
+    }
+    cout << endl << "Second crossover: ";
+    for (uint64_t i = 0; i < children.second.size(); i++)
+    {
+        cout << children.second[i] << ", ";
+    }
+    cout << endl << endl;
+
+    children = solver.OP_crossover(first, second);
+    cout << endl << "OP crossover info:";
 
     cout << endl << "Cross between first and second: ";
     cout << endl << "First crossover: ";
