@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1731080130 source:c:\projects\university\ai_4_course\homeworks\ai_hw_3\src.cpp
+1731414530 source:c:\projects\university\ai_4_course\homeworks\ai_hw_3\src.cpp
 	<iostream>
 	<string>
 	<vector>
@@ -8,4 +8,9 @@
 	<algorithm>
 	<float.h>
 	<unordered_set>
+	<chrono>
+	<sstream>
+	<fstream>
+	<charconv>
+	<optional>
 
