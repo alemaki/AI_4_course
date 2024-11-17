@@ -606,7 +606,7 @@ Path TravelingSalesmanSolver::find_solution() const
     return current_paths[current_best_index];
 }
 
-optional<double> convert_to_number(const string& str) // python is easier :(
+optional<double> convert_to_number(const string& str) // python is in fact not easier :(
 {
     try
     {
