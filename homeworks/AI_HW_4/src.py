@@ -1,6 +1,6 @@
 from board import Board
 from board import Color
-
+from computer import ComputerPlayer
 class DotsAndBoxesGame:
     def __init__(self, rows: int, columns: int, computer_first: bool = False):
         self.board: Board = Board(rows, columns)
@@ -9,6 +9,7 @@ class DotsAndBoxesGame:
         self.current_turn: int = 0
         self.player_color: Color = Color.FIRST if not computer_first else Color.SECOND
         self.computer_color: Color = Color.FIRST if computer_first else Color.SECOND
+        self.computer: ComputerPlayer = ComputerPlayer(self.board, computer_first)
 
     def play(self):
         self.board.print_board()
@@ -31,11 +32,13 @@ class DotsAndBoxesGame:
             self.player_turn()
             self.computer_to_play = True
         else:
-            #self.computer_turn()
+            self.computer_turn()
             self.computer_to_play = False
 
     def player_turn(self):
         while True: 
+            if self.board.is_game_finished():
+                break
             (row, col, horizontal) = self._get_player_input()
             points: int = self.board.place_line(row, col, self.player_color, horizontal)
             print("Player plays on turn", self.current_turn, "and earns", points, "points:\n")
@@ -58,8 +61,19 @@ class DotsAndBoxesGame:
             except (ValueError, IndexError):
                 print("Invalid input, try again! Format: row col horizontal")
         return (row, col, horizontal)
+    
+    def computer_turn(self):
+        while True: 
+            if self.board.is_game_finished():
+                break
+            (row, col, horizontal) = self.computer.get_move_for_board(self.board)
+            points: int = self.board.place_line(row, col, self.computer_color, horizontal)
+            print("Computer plays on turn", self.current_turn, "and earns", points, "points:\n")
+            self.board.print_board()
+            if points == 0:
+                break
                 
 
 
-game = DotsAndBoxesGame(2, 2)
+game = DotsAndBoxesGame(3, 2)
 game.play()

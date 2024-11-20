@@ -1,9 +1,14 @@
 from enum import Enum
+from copy import deepcopy
 
 class Color(Enum):
     EMPTY = 0
     FIRST = 1
     SECOND = 2
+
+    def get_opposite(color):
+        return Color.SECOND if color == Color.FIRST else Color.FIRST
+
 
 class Board:
     def __init__(self, rows: int, cols: int):
@@ -189,3 +194,22 @@ class Board:
 # print("made point:", board.place_line(2, 0, Color.FIRST))
 # board.print_board()
 # print("\n\n\n")
+
+
+# board2 = deepcopy(board)
+# board.place_line(2, 1, Color.FIRST)
+# board2.place_line(2, 1, Color.SECOND)
+# print(f"Hash for board1: {hash(board)}")
+# print(f"Hash for board2: {hash(board2)}")
+# print(f"Equality check: {board == board2}")
+
+# color1 = Color.FIRST
+# color2 = Color.FIRST
+# print(f"Hash for color1: {hash(color1)}")
+# print(f"Hash for color2: {hash(color2)}")
+# print(f"Equality check: {color1 == color2}")
+
+
+# print(f"Hash for board1, color1: {hash((board, color1))}")
+# print(f"Hash for board1, color1: {hash((board2, color2))}")
+# print(f"Equality check: {(board, color1) == (board2, color2)}")

@@ -1,46 +1,48 @@
 from board import Board
 from board import Color
+from queue import Queue
+from math import inf
 import copy
 
 class Node:
-    def __init__(self, board: Board, is_comp_to_play: bool = True, is_start_node: bool = False):
+    def __init__(self, board: Board, color_to_play: Color):
         self.board: Board = copy.deepcopy(board)
         self.row: int = -1
         self.col: int = -1 
         self.horizontal: int = -1
         self.points_made: int = 0
-        self.children_generated: bool = False
         self.children: list[Node] = []
+        self.alpha = -inf
+        self.beta = inf
         self.should_generate_new_children: list[bool] = []
-        self.is_comp_to_play: bool = is_comp_to_play
-        self.is_start_node = is_start_node
+        self.color_to_play: bool = color_to_play
 
         self.evaluation: int = 0 
 
-    def set_move_on_node(self, row: int, col: int, horizontal: int):
+    def set_move_on_node(self, row: int, col: int, horizontal: bool):
         assert(self.board.can_place_line_at(row, col, horizontal))
         self.row = row
         self.col = col
         self.horizontal = horizontal
-        self.points_made = self.board.place_line(row, col, horizontal)
+        self.points_made = self.board.place_line(row, col, self.color_to_play, horizontal)
         self.evaluate_move()
 
     def evaluate_move(self):
         if self.points_made == 0:
-            self.is_comp_to_play = not self.is_comp_to_play
+            self.color_to_play = Color.get_opposite(self.color_to_play)
 
     def generate_children(self):
-        for i in 0..self.board.rows + 1:
-            for j in 0..self.board.cols:
+        for i in range(0, self.board.rows + 1):
+            for j in range(0, self.board.cols):
                 if self.board.can_place_line_at(i, j, True):
-                    node: Node = Node(self.board, self.is_comp_to_play)
+                    node: Node = Node(self.board, self.color_to_play)
                     self.children.append(node)
                     node.set_move_on_node(i, j, True)
 
-        for i in 0..self.board.rows:
-            for j in 0..self.board.cols + 1:
+        for i in range(0, self.board.rows):
+            for j in range(0, self.board.cols + 1):
                 if self.board.can_place_line_at(i, j, False):
-                    node: Node = Node(self.board, self.is_comp_to_play)
+                    node: Node = Node(self.board, self.color_to_play)
                     self.children.append(node)
                     node.set_move_on_node(i, j, False)
         
@@ -48,6 +50,92 @@ class Node:
         
 class ComputerPlayer:
     def __init__(self, initial_board: Board, first_to_play: bool):
-        self.visisted_boards: dict[tuple[Board, Color], Node] = {} # Have to encode who is next to play, because it is different cases even if boards are the same.
-        self.tree: Node = Node(initial_board, first_to_play, True)
-        self.color = Node
+        self.visited_boards: dict[tuple[Board, Color], Node] = {} # Have to encode who is next to play, because it is different cases even if boards are the same.
+        self.color = Color.FIRST if first_to_play else Color.SECOND
+        self.player_color = Color.get_opposite(self.color)
+        self.tree = Node(initial_board, Color.FIRST) 
+        self.generate_all_nodes()
+
+    def generate_all_nodes(self):
+        q: Queue = Queue()
+        q.put(self.tree)
+
+        while not q.empty():
+            node: Node = q.get()
+            color_to_play: Color = node.color_to_play
+
+            if ((node.board, color_to_play) in self.visited_boards):
+                children = self.visited_boards[node.board, color_to_play].children
+                node.children = children # ref
+                continue
+            else:
+                node.generate_children()
+                for child in node.children:
+                    q.put(child)
+
+            #print("computer evals move: ", node.row, node.col, node.horizontal)
+            self.visited_boards[(node.board, color_to_play)] = node
+    
+    def get_opposite_color(self):
+        return Color.SECOND if self.color == Color.FIRST else self.FIRST
+ 
+    def get_move_for_board(self, board: Board) -> tuple[int, int, bool]:
+        assert((board, self.color) in self.visited_boards)
+        node: Node = self.visited_boards[board, self.color]
+        points = self.max_value(node, -inf, inf)
+        print("Computer thinks it can get a minimum of ", points, " in regards to player points")
+        for child in node.children:
+            #print("alpha", child.alpha)
+            if points == child.alpha:
+                return child.row, child.col, child.horizontal
+        for child in node.children:
+            #print("beta", child.beta)
+            if points == child.beta:
+                return child.row, child.col, child.horizontal
+        return None
+    
+
+    def max_value(self, node: Node, alpha, beta):
+        v = -inf
+        if node.board.is_game_finished():
+            points = node.board.first_player_points - node.board.second_player_points if self.color == Color.FIRST\
+                     else node.board.second_player_points - node.board.first_player_points
+            node.alpha = points
+            return points
+
+        if node.alpha != -inf:
+            return node.alpha
+
+        for child in node.children:
+            if (child.color_to_play == self.color):
+                v = max(v, self.max_value(child, alpha, beta))
+            else:
+                v = max(v, self.min_value(child, alpha, beta))
+            if v >= beta:
+                return v
+            alpha = max(alpha, v)
+            child.alpha = alpha
+        return v
+    
+    def min_value(self, node: Node, alpha, beta):
+        v = inf
+        if node.board.is_game_finished():
+            points = node.board.first_player_points - node.board.second_player_points if self.color == Color.FIRST\
+                     else node.board.second_player_points - node.board.first_player_points
+            node.beta = points
+            return points
+
+        if node.beta != inf:
+            return node.beta
+
+        for child in node.children:
+            if (child.color_to_play == self.color):
+                v = min(v, self.max_value(child, alpha, beta))
+            else:
+                v = min(v, self.min_value(child, alpha, beta))
+            if v <= alpha:
+                return v
+            beta = min(beta, v)
+            child.beta = beta
+        return v
+
