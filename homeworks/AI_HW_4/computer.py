@@ -81,18 +81,15 @@ class ComputerPlayer:
  
     def get_move_for_board(self, board: Board) -> tuple[int, int, bool]:
         assert((board, self.color) in self.visited_boards)
+        assert(not board.is_game_finished())
         node: Node = self.visited_boards[board, self.color]
         points = self.max_value(node, -inf, inf)
-        print("Computer thinks it can get a minimum of ", points, " in regards to player points")
+        needed_child = node.children[0]
         for child in node.children:
-            #print("alpha", child.alpha)
-            if points == child.alpha:
-                return child.row, child.col, child.horizontal
-        for child in node.children:
-            #print("beta", child.beta)
-            if points == child.beta:
-                return child.row, child.col, child.horizontal
-        return None
+            if needed_child.alpha < child.alpha:
+                needed_child = child
+
+        return (needed_child.row, needed_child.col, needed_child.horizontal)
     
 
     def max_value(self, node: Node, alpha, beta):
@@ -114,7 +111,7 @@ class ComputerPlayer:
             if v >= beta:
                 return v
             alpha = max(alpha, v)
-            child.alpha = alpha
+            child.alpha = max(alpha, child.alpha)
         return v
     
     def min_value(self, node: Node, alpha, beta):
@@ -136,6 +133,6 @@ class ComputerPlayer:
             if v <= alpha:
                 return v
             beta = min(beta, v)
-            child.beta = beta
+            child.beta = min(beta, child.beta)
         return v
 

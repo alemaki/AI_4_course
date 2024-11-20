@@ -24,6 +24,12 @@ class DotsAndBoxesGame:
             print("Computer" if ((self.computer_first and self.board.first_player_points > self.board.second_player_points)
                                     or (not self.computer_first and self.board.first_player_points < self.board.second_player_points))
                     else "Player")
+        best_player_points = self.board.first_player_points
+        other_player_points = self.board.second_player_points
+        if best_player_points < other_player_points:
+            best_player_points, other_player_points = other_player_points, best_player_points
+        print(best_player_points, "to", other_player_points)
+
         return    
         
     def turn(self):
@@ -48,18 +54,32 @@ class DotsAndBoxesGame:
 
 
     def _get_player_input(self) -> tuple[int, int, bool]:
-        print("Please put your input (row, col, horizontal) as space-separated values:")
+        print("Please put your input (row, col for the two points, indexed from 1.) as space-separated values:")
         while True:
             try:
                 user_input = input().strip().split()
-                row = int(user_input[0])
-                col = int(user_input[1])
-                horizontal = bool(int(user_input[2]))
+                dot_row1 = int(user_input[0]) - 1
+                dot_col1 = int(user_input[1]) - 1
+                dot_row2 = int(user_input[2]) - 1
+                dot_col2 = int(user_input[3]) - 1
+                if dot_row2 < dot_row1:
+                    dot_row1, dot_row2 = dot_row2, dot_row1
+                    dot_col1, dot_col2 = dot_col2, dot_col1
+                if dot_row2 - dot_row1 != 1 and dot_row2 - dot_row1 != 0:
+                    raise IndexError("Invalid rows.")
+                if dot_col2 - dot_col1 != 1 and dot_col2 - dot_col1 != 0:
+                    raise IndexError("Invalid cols.")
+                if dot_row2 - dot_row1 + dot_col2 - dot_col1 != 1:
+                    raise IndexError("Diagonal lines are invalid.")
+                row = dot_row1
+                col = dot_col1
+                horizontal = (dot_row2 - dot_row1 == 0)
+
                 if self.board.can_place_line_at(row, col, horizontal):
                     break
                 print("Impossible move, try again!")
             except (ValueError, IndexError):
-                print("Invalid input, try again! Format: row col horizontal")
+                print("Invalid input, try again! Format: row col row col (indexed from 1)")
         return (row, col, horizontal)
     
     def computer_turn(self):
@@ -68,12 +88,19 @@ class DotsAndBoxesGame:
                 break
             (row, col, horizontal) = self.computer.get_move_for_board(self.board)
             points: int = self.board.place_line(row, col, self.computer_color, horizontal)
-            print("Computer plays on turn", self.current_turn, "and earns", points, "points:\n")
+            print("Computer plays on turn", self.current_turn, "and earns", points, "points:\n" if points == 0 else "point")
             self.board.print_board()
             if points == 0:
                 break
                 
 
 
-game = DotsAndBoxesGame(3, 2)
+
+print("Would you like to play first? (yes/y or _)")
+user_input: str = input()
+computer_first = True 
+if user_input.lower() in ["yes", "y"]:
+    computer_first = False 
+
+game = DotsAndBoxesGame(3, 2, computer_first)
 game.play()
