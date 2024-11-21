@@ -10,6 +10,7 @@ class DotsAndBoxesGame:
         self.player_color: Color = Color.FIRST if not computer_first else Color.SECOND
         self.computer_color: Color = Color.FIRST if computer_first else Color.SECOND
         self.computer: ComputerPlayer = ComputerPlayer(self.board, computer_first)
+        #self.computer2: ComputerPlayer = ComputerPlayer(self.board, (not computer_first))
 
     def play(self):
         self.board.print_board()
@@ -92,7 +93,17 @@ class DotsAndBoxesGame:
             self.board.print_board()
             if points == 0:
                 break
-                
+
+    # def computer2_turn(self):
+    #     while True: 
+    #         if self.board.is_game_finished():
+    #             break
+    #         (row, col, horizontal) = self.computer2.get_move_for_board(self.board)
+    #         points: int = self.board.place_line(row, col, Color.get_opposite(self.computer_color), horizontal)
+    #         print("Computer2 plays on turn", self.current_turn, "and earns", points, "points:\n" if points == 0 else "point")
+    #         self.board.print_board()
+    #         if points == 0:
+    #             break
 
 
 
@@ -102,5 +113,5 @@ computer_first = True
 if user_input.lower() in ["yes", "y"]:
     computer_first = False 
 
-game = DotsAndBoxesGame(3, 2, computer_first)
+game = DotsAndBoxesGame(3, 2, computer_first) # 3 3 crashes the program :D
 game.play()

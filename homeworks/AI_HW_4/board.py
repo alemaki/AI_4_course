@@ -35,20 +35,21 @@ class Board:
             for (_, color) in enumerate(self.horizontal_line_rows[i]):
                 line_str += "O"
                 if color != Color.EMPTY:
-                    line_str += "---"
+                    line_str += "-----"
                 else:
-                    line_str += "   "
+                    line_str += "     "
             line_str += "O"
             print(line_str)
 
             line_strings: list[str] = ["", "", ""]
-            for (_, color) in enumerate(self.vertical_line_rows[i]):
+            for (j, color) in enumerate(self.vertical_line_rows[i]):
                 if color != Color.EMPTY:
                     line_strings = list(map(lambda x: x + "|", line_strings))
                 else:
                     line_strings = list(map(lambda x: x + " ", line_strings))
-                line_strings = list(map(lambda x: x + "   ", line_strings))
-
+                line_strings = list(map(lambda x: x + "     ", line_strings))
+                if j < self.cols and self.square_colors[i][j] != Color.EMPTY:
+                    line_strings[1] = line_strings[1][0:j*6+3] + ("F" if self.square_colors[i][j] == Color.FIRST else "S") + line_strings[1][j*6+4:]
             print(line_strings[0])
             print(line_strings[1])
             print(line_strings[2])
@@ -57,9 +58,9 @@ class Board:
         for (_, color) in enumerate(self.horizontal_line_rows[self.rows]):
             line_str += "O"
             if color != Color.EMPTY:
-                line_str += "---"
+                line_str += "-----"
             else:
-                line_str += "   "
+                line_str += "     "
         line_str += "O"
         print(line_str)
 
@@ -114,7 +115,7 @@ class Board:
     
     def _set_score_at_placed_line(self, row: int, col: int, color: Color, horizontal: bool = True):
         points: int = self._get_points_made_at_placed_line(row, col, horizontal)
-        
+        assert(points >= 0)
         if color == Color.FIRST:
             self.first_player_points += points
         else:

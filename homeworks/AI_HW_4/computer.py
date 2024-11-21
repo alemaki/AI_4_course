@@ -83,12 +83,17 @@ class ComputerPlayer:
         assert((board, self.color) in self.visited_boards)
         assert(not board.is_game_finished())
         node: Node = self.visited_boards[board, self.color]
-        points = self.max_value(node, -inf, inf)
-        needed_child = node.children[0]
+        _ = self.max_value(node, -inf, inf)
+        needed_child: Node
+        max_stat = -inf
         for child in node.children:
-            if needed_child.alpha < child.alpha:
+            if child.color_to_play == self.color and child.alpha > max_stat:
                 needed_child = child
-
+                max_stat = child.alpha
+            elif child.color_to_play != self.color and child.beta > max_stat and child.beta != inf:
+                needed_child = child
+                max_stat = child.beta
+        print("Computer estimates getting", max_stat, "score (computer's points - player's points).")
         return (needed_child.row, needed_child.col, needed_child.horizontal)
     
 
@@ -109,9 +114,10 @@ class ComputerPlayer:
             else:
                 v = max(v, self.min_value(child, alpha, beta))
             if v >= beta:
+                node.alpha = v
                 return v
             alpha = max(alpha, v)
-            child.alpha = max(alpha, child.alpha)
+            node.alpha = alpha
         return v
     
     def min_value(self, node: Node, alpha, beta):
@@ -131,8 +137,9 @@ class ComputerPlayer:
             else:
                 v = min(v, self.min_value(child, alpha, beta))
             if v <= alpha:
+                node.beta = v
                 return v
             beta = min(beta, v)
-            child.beta = min(beta, child.beta)
+            node.beta = beta
         return v
 
