@@ -8,6 +8,9 @@ class Color(Enum):
 
     def get_opposite(color):
         return Color.SECOND if color == Color.FIRST else Color.FIRST
+    
+    def get_opposite(self):
+        return Color.SECOND if self == Color.FIRST else Color.FIRST
 
 
 class Board:
