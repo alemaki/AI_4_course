@@ -2,10 +2,11 @@
 from typing import Optional
 from pandas import DataFrame
 from copy import deepcopy
+from math import log, inf
 import csv
 
 
-FILE_PATH = "homeworks\AI_HW_5\house-votes-84.data"
+FILE_PATH = "homeworks/AI_HW_5/house-votes-84.data"
 
 def read_data_set(file_path: str) -> list[list[str]]:
     with open(file_path, newline='') as data:
@@ -74,32 +75,63 @@ class BayesNC:
         
         return self.attribute_counts[class_name][attribute_index]["no"]
         
-    def get_model_prediciton(self, attributes: list[Optional[bool]]) -> str:
-
-
-        class_evals: dict[str, int] = {}
-        best_class_name: str = ""
+    def get_model_prediction(self, attributes: list[Optional[bool]]) -> str:
+        #class_evals: dict[str, int] = {}
+        best_class_name: str = "all 0"
+        best_class_chance: float = -inf
         for class_name in self.class_names:
-            chance: float = 1
+            chance: float = log(float(self.class_counter[class_name]) / self.dataset_rows)
+
             for i, attribute in enumerate(attributes):
                 #total_votes_for_atr_in_class: int = self.get_attribute_total_for_class(class_name, i) #not interested now
-                votes_for_atr_in_class = self.get_votes_for_attribute_for_class(class_name, i, attribute)
-                if votes_for_atr_in_class == 0:
-                    votes_for_atr_in_class = 1.0 # Laplace smoothing 
-                votes_for_atr_in_class = float(votes_for_atr_in_class) #force float just in case
-                total_classes: float = float(self.class_counter[class_name])
-                chance *= votes_for_atr_in_class/total_classes
+                votes_for_atr_in_class = self.get_votes_for_attribute_for_class(class_name, i, attribute) + 2.0 # Laplace smoothing 
+                total_class_votes: float = float(self.class_counter[class_name]) + 1.0
+                chance += log(votes_for_atr_in_class / total_class_votes)
+            if chance > best_class_chance:
+                best_class_chance = chance
+                best_class_name = class_name
+        return best_class_name
                 
 
-                
+read_data = read_data_set(FILE_PATH)
+dataset: list[tuple[str, list[bool | None]]] = preprocess_data(read_data)
 
 
 
+for fold_index in range(0, 10):
+    dataset_size: int = len(dataset)
+    first_train_start: int = 0 if fold_index != 0 else dataset_size // 10
+    first_train_end: int = fold_index * (dataset_size // 10)
+    second_train_start: int = (fold_index + 1) * (dataset_size // 10) if fold_index != 9 else dataset_size
+    second_train_end: int = dataset_size
+
+    test_start = first_train_end
+    test_end = second_train_start
+
+    if second_train_start == dataset_size:  # Last fold
+        train_entries = dataset[first_train_start:first_train_end]
+    else:
+        train_entries = dataset[first_train_start:first_train_end] + dataset[second_train_start:second_train_end]
+
+    test_entries = dataset[test_start:test_end]
+
+    bayes_NC = BayesNC()
+    bayes_NC.train_model(train_entries)
+
+    correct_predictions = 0
+    incorrect_predictions = 0
+    for entry in test_entries:
+        prediction = bayes_NC.get_model_prediction(entry[1])
+        correct_predictions += (prediction == entry[0])
+        incorrect_predictions += not (prediction == entry[0])
+
+    total_predictions = correct_predictions + incorrect_predictions
+    accuracy_percentage = (correct_predictions / total_predictions) * 100
+
+    print(
+        f"Model number {fold_index} got correct: {correct_predictions}, incorrect: {incorrect_predictions}\n",
+        f"accuracy: {accuracy_percentage:.2f}%"
+    )
 
 
-        
-        
-        
-        
-
-print(preprocess_data(read_data_set(FILE_PATH)))
+    
