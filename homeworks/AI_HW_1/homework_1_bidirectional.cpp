@@ -210,7 +210,6 @@ void create_fhg_score(Node* node, bool reverse = false)
             else
             {
                 h_score += (std::abs(desired_board_map[num].first - i) + std::abs(desired_board_map[num].second - j));
-
             }
         }
     }

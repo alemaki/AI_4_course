@@ -56,14 +56,14 @@ class ComputerPlayer:
         self.color = Color.FIRST if first_to_play else Color.SECOND
         self.player_color = Color.get_opposite(self.color)
         self.tree = Node(initial_board, Color.FIRST) 
-        #self.generate_all_nodes() 
+        self.generate_all_nodes() 
         # before optimisation. when generating entire tree. 3 2 runs with time: 58 seconds.
 
         # Ugly code but that way the board is always initialised in the beggining. No need to think after that.
-        if first_to_play:
-            print("Computer estimates getting", self.max_value(self.tree, -inf, inf), "score (computer's points - player's points).")
-        else:
-            print("Computer estimates getting", self.min_value(self.tree, -inf, inf), "score (computer's points - player's points).")
+        # if first_to_play:
+        #     print("Computer estimates getting", self.max_value(self.tree, -inf, inf), "score (computer's points - player's points).")
+        # else:
+        #     print("Computer estimates getting", self.min_value(self.tree, -inf, inf), "score (computer's points - player's points).")
         # Now with alpha beta pruning the code runs for less than 15 seconds for 3 by 2 board.
 
     def generate_all_nodes(self):
@@ -98,7 +98,7 @@ class ComputerPlayer:
         self.visited_boards[(node.board, color_to_play)] = node
  
     def get_move_for_board(self, board: Board) -> tuple[int, int, bool]:
-        #assert((board, self.color) in self.visited_boards) # remove this because now we do not generate all the possible moves the player might do, because of alpha beta pruning
+        assert((board, self.color) in self.visited_boards) # remove this because now we do not generate all the possible moves the player might do, because of alpha beta pruning
         assert(not board.is_game_finished())
         node: Node = self.visited_boards[board, self.color]
         _ = self.max_value(node, -inf, inf)

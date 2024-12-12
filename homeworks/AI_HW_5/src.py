@@ -1,17 +1,15 @@
 
 from typing import Optional
 from random import shuffle
-from copy import deepcopy
 from math import log, inf
 from statistics import median, mean, stdev
 import csv
-
 
 FILE_PATH = "./house-votes-84.data" # run in the same folder
 
 DatasetType = list[tuple[str, list[Optional[bool]]]]
 
-def read_data_set(file_path: str) -> list[list[str]]:
+def read_dataset(file_path: str) -> list[list[str]]:
     with open(file_path, newline='') as data:
         reader = csv.reader(data)
         return [row for row in reader]
@@ -134,8 +132,8 @@ class BayesNC:
 
             for i, attribute in enumerate(attributes):
                 #total_votes_for_atr_in_class: int = self.get_attribute_total_for_class(class_name, i) #not interested now
-                votes_for_atr_in_class = self.get_votes_for_attribute_for_class(class_name, i, attribute) + 2.0 * self.laplace_lambda # Laplace smoothing 
-                total_class_votes: float = float(self.class_counter[class_name]) + self.laplace_lambda
+                votes_for_atr_in_class = self.get_votes_for_attribute_for_class(class_name, i, attribute) + self.laplace_lambda # Laplace smoothing 
+                total_class_votes: float = float(self.class_counter[class_name]) + 2.0 * self.laplace_lambda
                 chance += log(votes_for_atr_in_class / total_class_votes)
             if chance > best_class_chance:
                 best_class_chance = chance
@@ -148,7 +146,7 @@ fold_splits = 10 # 90:10
 
 user_input: bool = bool(input() != "0")
 
-read_data = read_data_set(FILE_PATH)
+read_data = read_dataset(FILE_PATH)
 dataset: DatasetType = preprocess_data(read_data)
 
 if user_input:
@@ -198,6 +196,14 @@ print(f"The standard deviation is {stdev(accuracies):.2f}%")
 bayes_NC = BayesNC()
 bayes_NC.train_model(training_set)
 correct_predictions, incorrect_predictions = bayes_NC.get_predictions_for_entries(test_set)
+total_predictions = correct_predictions + incorrect_predictions
+accuracy_percentage = (correct_predictions / total_predictions) * 100
+
+print(
+    f"\n\nModel after finished training got correct: {correct_predictions}, incorrect: {incorrect_predictions}. Accuracy: {accuracy_percentage:.2f}%"
+)
+
+correct_predictions, incorrect_predictions = bayes_NC.get_predictions_for_entries(training_set)
 total_predictions = correct_predictions + incorrect_predictions
 accuracy_percentage = (correct_predictions / total_predictions) * 100
 

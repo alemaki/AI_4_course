@@ -14,7 +14,6 @@ class DotsAndBoxesGame:
 
     def play(self):
         self.board.print_board()
-        
         while (not self.board.is_game_finished()):
             self.turn()
 

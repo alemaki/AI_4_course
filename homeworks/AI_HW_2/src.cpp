@@ -240,7 +240,7 @@ public:
 
     }
 };
-#define FOREVER 0
+#define FOREVER 1
 int main ()
 {
     do
