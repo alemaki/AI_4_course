@@ -63,17 +63,17 @@ def test_ID3_tree_generation():
     assert tree.feature_name == "Outlook"
     assert len(tree.feature_value_to_child.keys()) == 2
     assert len(tree.feature_value_to_return_value.keys()) == 1
-    assert "Sunny" in tree.feature_value_to_child.keys()
-    assert "Rainy" in tree.feature_value_to_child.keys()
-    assert "Overcast" in tree.feature_value_to_return_value.keys()
+    assert "Sunny" in tree.feature_value_to_child
+    assert "Rainy" in tree.feature_value_to_child
+    assert "Overcast" in tree.feature_value_to_return_value
     assert tree.feature_value_to_return_value["Overcast"] == "Yes"
 
     child1 = tree.feature_value_to_child["Sunny"]
     assert child1.feature_name == "Windy"
     assert len(child1.feature_value_to_child.keys()) == 0
     assert len(child1.feature_value_to_return_value.keys()) == 2
-    assert True in child1.feature_value_to_return_value.keys()
-    assert False in child1.feature_value_to_return_value.keys()
+    assert True in child1.feature_value_to_return_value
+    assert False in child1.feature_value_to_return_value
     assert child1.feature_value_to_return_value[True] == "No"
     assert child1.feature_value_to_return_value[False] == "Yes"
 
@@ -81,14 +81,39 @@ def test_ID3_tree_generation():
     assert child2.feature_name == "Humidity"
     assert len(child2.feature_value_to_child.keys()) == 0
     assert len(child2.feature_value_to_return_value.keys()) == 2
-    assert "High" in child2.feature_value_to_return_value.keys()
-    assert "Normal" in child2.feature_value_to_return_value.keys()
+    assert "High" in child2.feature_value_to_return_value
+    assert "Normal" in child2.feature_value_to_return_value
     assert child2.feature_value_to_return_value["High"] == "No"
     assert child2.feature_value_to_return_value["Normal"] == "Yes"
 
 
+def test_ID3_predictions():
+    test_model = ID3()
+    test_model.train_model(test_dataset)
 
 
+    # should not make random predictions
+    assert test_model.make_prediciton(test_dataset.iloc[0]) == ("No", True)
+    assert test_model.make_prediciton(test_dataset.iloc[1]) == ("No", True)
+    assert test_model.make_prediciton(test_dataset.iloc[2]) == ("Yes", True)
+    assert test_model.make_prediciton(test_dataset.iloc[3]) == ("Yes", True)
+    assert test_model.make_prediciton(test_dataset.iloc[4]) == ("Yes", True)
+    assert test_model.make_prediciton(test_dataset.iloc[5]) == ("No", True)
+    assert test_model.make_prediciton(test_dataset.iloc[6]) == ("Yes", True)
+    assert test_model.make_prediciton(test_dataset.iloc[7]) == ("No", True)
+    assert test_model.make_prediciton(test_dataset.iloc[8]) == ("Yes", True)
+    assert test_model.make_prediciton(test_dataset.iloc[9]) == ("Yes", True)
+    assert test_model.make_prediciton(test_dataset.iloc[10]) == ("Yes", True)
+    assert test_model.make_prediciton(test_dataset.iloc[11]) == ("Yes", True)
+    assert test_model.make_prediciton(test_dataset.iloc[12]) == ("Yes", True)
+    assert test_model.make_prediciton(test_dataset.iloc[13]) == ("No", True)
+
+def test_ID3_random_predictions():
+    test_model = ID3()
+    test_model.train_model(test_dataset)
+    
+    assert test_model.make_prediciton({"Outlook": "idk"}) [1] ==  False
+    assert test_model.make_prediciton({"Outlook": "something else"}) [1] ==  False
 
 
 

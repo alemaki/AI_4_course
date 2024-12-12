@@ -2,7 +2,7 @@ from ucimlrepo import fetch_ucirepo
 from pandas.core.frame import DataFrame
 from copy import deepcopy
 from math import log2, inf
-
+from random import choice
 breast_cancer = fetch_ucirepo(id=14) 
 
 features = breast_cancer.data.features
@@ -18,19 +18,11 @@ class Node:
         self.feature_values = dataset[feature_name].unique()
         self.feature_value_to_child: dict[str, Node] = {}
         self.feature_value_to_return_value: dict[str, str | None] = {}
-
-
-
-
-
     
-
-    
-
 
 # NOTE: this model won't work with inputs with number of features more than 36 since it works with recursion only, and python hard caps recursion to 36, unless modified
 class ID3:
-    classes: list[str] = []
+    classes: list[str]
     tree: Node
 
     def train_model(self, dataset: DataFrame):
@@ -70,6 +62,24 @@ class ID3:
                 node.feature_value_to_child[value] = self.create_tree(dataset_slice)
         
         return node
+    
+
+    def make_prediciton(self, data_row: DataFrame | dict) -> tuple[str, bool]:
+        current_node = self.tree
+
+        while True:
+            if current_node.feature_name not in data_row:
+                print("Missing feature :" + current_node.feature_name)
+                break
+            feature_value = data_row[current_node.feature_name]
+            if feature_value in current_node.feature_value_to_child:
+                current_node = current_node.feature_value_to_child[feature_value]
+            elif feature_value in current_node.feature_value_to_return_value:
+                return (current_node.feature_value_to_return_value[feature_value], True)
+            else:
+                break
+
+        return (choice(self.classes), False)
 
     @staticmethod
     def get_p_for_feature_value(dataset: DataFrame, feature: str, value: str) -> float:
