@@ -13,63 +13,78 @@ dataset = DataFrame(data=features, columns=headers)
 dataset['Class'] = targets
 
 class Node:
-    def __init__(self, dataset: DataFrame, feature_name: str):
-        self.feature_name: str = feature_name
-        self.feature_values = dataset[feature_name].unique()
-        self.feature_value_to_child: dict[str, Node] = {}
+    def __init__(self, dataset: DataFrame, feature_name: str | None, class_feature_name: str):
+        self.feature_name: str | None = feature_name
+
         self.feature_value_to_return_value: dict[str, str | None] = {}
+        self.feature_value_to_child: dict[str, Node] = {} # to node
+
+        self.is_leaf: bool = (feature_name is None)
+        if feature_name == None:
+            #MSS Prepruning
+            self.majority_class = dataset[class_feature_name].value_counts().idxmax()
+        else:
+            #Normal
+            self.majority_class = None
+            self.feature_values = dataset[feature_name].unique()
     
 
 # NOTE: this model won't work with inputs with number of features more than 36 since it works with recursion only, and python hard caps recursion to 36, unless modified
 class ID3:
     classes: list[str]
     tree: Node
+    def __init__(self, min_samples_split = -inf):
+        self.min_samples_split = min_samples_split
 
-    def train_model(self, dataset: DataFrame):
-        self.classes = list(dataset['Class'].unique())
+    def train_model(self, dataset: DataFrame , class_feature_name: str):
+        self.classes = list(dataset[class_feature_name].unique())
         print(f"All classes to train model: {self.classes} to train on model")
 
-        self.class_feature_name = "Class" #always
+        self.class_feature_name = class_feature_name
 
         self.tree: Node = self.create_tree(dataset)
         
     def create_tree(self, dataset: DataFrame):
+        #MSS Prepruning
+        if len(dataset) < self.min_samples_split:
+            node = Node(dataset, feature_name = None, class_feature_name = self.class_feature_name)
+            return node
+
+        #Splitting
         best_feature: str = None
         best_gain: float = -inf
 
-        class_feature_name = "Class" #always
-
         for feature_name in dataset.columns:
-            if feature_name == class_feature_name:
+            if feature_name == self.class_feature_name:
                 continue
 
-            result = self.get_information_gain_for_feature(dataset, class_feature_name, feature_name)
+            result = self.get_information_gain_for_feature(dataset, self.class_feature_name, feature_name)
 
             if result > best_gain:
                 best_gain = result
                 best_feature = feature_name
         
-        node = Node(dataset, best_feature)
+        node = Node(dataset, best_feature, self.class_feature_name)
 
         for value in node.feature_values:
             value_set: DataFrame = dataset[dataset[node.feature_name] == value]
-            if len(value_set[class_feature_name].unique()) == 1:
-                node.feature_value_to_return_value[value] = value_set[class_feature_name].unique()[0]
+            if len(value_set[self.class_feature_name].unique()) == 1:
+                node.feature_value_to_return_value[value] = value_set[self.class_feature_name].unique()[0]
             else:
-                dataset_slice = dataset[dataset[node.feature_name] == value]
-                #dataset_slice = deepcopy(dataset_slice) # just in case
-                dataset_slice = dataset_slice.drop(columns=[node.feature_name])
+                dataset_slice: DataFrame = value_set.drop(columns=[node.feature_name])
                 node.feature_value_to_child[value] = self.create_tree(dataset_slice)
         
         return node
     
 
     def make_prediciton(self, data_row: DataFrame | dict) -> tuple[str, bool]:
-        current_node = self.tree
+        current_node: Node = self.tree
 
-        while True:
+        while current_node:
+            if current_node.is_leaf:  # Leaf node due to MSS or other reasons
+                return (current_node.majority_class, True)
             if current_node.feature_name not in data_row:
-                print("Missing feature :" + current_node.feature_name)
+                print("Missing feature: " + current_node.feature_name)
                 break
             feature_value = data_row[current_node.feature_name]
             if feature_value in current_node.feature_value_to_child:
@@ -127,7 +142,7 @@ class ID3:
 
 
 model = ID3()
-#model.train_model(dataset)
+#model.train_model(dataset, "Class")
 
         
     
