@@ -1,16 +1,22 @@
 from ucimlrepo import fetch_ucirepo 
 from pandas.core.frame import DataFrame
-from copy import deepcopy
-from math import log2, inf
+from math import log2, inf, isclose
+from statistics import median, mean, stdev
 from random import choice
+from sklearn.model_selection import train_test_split, KFold
+
 breast_cancer = fetch_ucirepo(id=14) 
 
 features = breast_cancer.data.features
 headers = breast_cancer.data.headers
 targets = breast_cancer.data.targets
 
-dataset = DataFrame(data=features, columns=headers)
-dataset['Class'] = targets
+global_dataset = DataFrame(data=features, columns=headers)
+global_dataset['Class'] = targets
+
+#impute missing vals
+modes = {col: global_dataset[col].mode().iloc[0] for col in global_dataset.columns if global_dataset[col].notna().any()}
+global_dataset.fillna(modes, inplace=True)
 
 class Node:
     def __init__(self, dataset: DataFrame, feature_name: str | None, class_feature_name: str):
@@ -38,10 +44,8 @@ class ID3:
 
     def train_model(self, dataset: DataFrame , class_feature_name: str):
         self.classes = list(dataset[class_feature_name].unique())
-        print(f"All classes to train model: {self.classes} to train on model")
-
+        #print(f"All classes to train model: {self.classes} to train on model")
         self.class_feature_name = class_feature_name
-
         self.tree: Node = self.create_tree(dataset)
         
     def create_tree(self, dataset: DataFrame):
@@ -58,18 +62,22 @@ class ID3:
             if feature_name == self.class_feature_name:
                 continue
 
-            result = self.get_information_gain_for_feature(dataset, self.class_feature_name, feature_name)
+            result = ID3.get_information_gain_for_feature(dataset, self.class_feature_name, feature_name)
 
             if result > best_gain:
                 best_gain = result
                 best_feature = feature_name
         
+        if best_gain == -inf: # Is just no entropy at all for all the values, and we haven't prepruned yet. (if there is no min_sample value given)
+            node = Node(dataset, feature_name = None, class_feature_name = self.class_feature_name)
+            return node
+        
         node = Node(dataset, best_feature, self.class_feature_name)
 
         for value in node.feature_values:
             value_set: DataFrame = dataset[dataset[node.feature_name] == value]
-            if len(value_set[self.class_feature_name].unique()) == 1:
-                node.feature_value_to_return_value[value] = value_set[self.class_feature_name].unique()[0]
+            if len(value_set[self.class_feature_name].dropna().unique()) == 1:
+                node.feature_value_to_return_value[value] = value_set[self.class_feature_name].dropna().unique()[0]
             else:
                 dataset_slice: DataFrame = value_set.drop(columns=[node.feature_name])
                 node.feature_value_to_child[value] = self.create_tree(dataset_slice)
@@ -109,7 +117,7 @@ class ID3:
     def get_entropy_for_feature(dataset: DataFrame, feature: str) -> float:
         feature_values = dataset[feature].unique()
 
-        entropy: float = 0.0
+        entropy: float = 0
         for feature_value in feature_values:
             p = ID3.get_p_for_feature_value(dataset, feature, feature_value)
             entropy -= p*log2(p)
@@ -137,12 +145,68 @@ class ID3:
 
     @staticmethod
     def get_information_gain_for_feature(dataset: DataFrame, class_feature_name: str, feature: str) -> float:
-        return ID3.get_entropy_for_feature(dataset, class_feature_name) - ID3.get_entropy_for_two_features(dataset, class_feature_name, feature)
+        entropy_for_class = ID3.get_entropy_for_feature(dataset, class_feature_name)
+        if isclose(entropy_for_class, 0.0):
+            return -inf # obviously not best feature
+        
+        entropy_for_class_and_feature = ID3.get_entropy_for_two_features(dataset, class_feature_name, feature)
+        return entropy_for_class - entropy_for_class_and_feature
     
+    def get_right_predictions_for_set(self, dataset: DataFrame) -> int:
+        count: int = 0
+        for _, row in dataset.iterrows():
+            prediction, _ = self.make_prediciton(row)
+            count += 1 if prediction == row["Class"] else 0
+        
+        return count
 
-
-model = ID3()
-#model.train_model(dataset, "Class")
 
         
+X = global_dataset.drop(columns=['Class'])
+y = global_dataset['Class']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y) # already coded one, no need for more
+
+training_dataset = DataFrame(X_train)
+training_dataset['Class'] = y_train
+
+test_dataset = DataFrame(X_test)
+test_dataset['Class'] = y_test
+
+kf = KFold(n_splits=10, shuffle=True)
+
+model_count = 0
+accuracies: list = []
+
+min_samples_split:int = 15 # getting best values with this. I guess
+
+for train_index, validation_index in kf.split(training_dataset):
+    train_fold, validation_fold = training_dataset.iloc[train_index], training_dataset.iloc[validation_index]
+    model = ID3(min_samples_split = min_samples_split)
+    model.train_model(train_fold, "Class")
+
+    size: int = len(validation_fold)
+    count: int = model.get_right_predictions_for_set(validation_fold)
     
+    accuracy: float = (count*100)/size
+    accuracies.append(accuracy)
+    print(
+        f"Model {model_count + 1} got accuracy: {accuracy:.2f}%"
+    )
+    model_count += 1
+
+print(f"For 10 models:")
+print(f"The median is {median(accuracies):.2f}%")
+print(f"The mean is {mean(accuracies):.2f}%")
+print(f"The standard deviation is {stdev(accuracies):.2f}%")
+
+
+model = ID3(min_samples_split = min_samples_split)
+model.train_model(training_dataset, "Class")
+size: int = len(test_dataset)
+count: int = model.get_right_predictions_for_set(test_dataset)
+accuracy: float = (count*100)/size
+
+print(
+    f"\n\nModel after finished training got accuracy: {accuracy:.2f}%"
+)

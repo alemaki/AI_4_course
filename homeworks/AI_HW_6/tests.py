@@ -1,7 +1,7 @@
 import pytest
 from pandas.core.frame import DataFrame
 from src import Node, ID3
-from math import log2
+from math import log2, inf
 from copy import deepcopy
 test_dataset = DataFrame(  # From presentations for testing
     data={
@@ -52,6 +52,30 @@ def test_get_entropy_for_two_features():
     entropy_for_PlayGolf_and_outlook = ID3.get_entropy_for_two_features(test_dataset, "PlayGolf", "Outlook")
     assert entropy_for_PlayGolf_and_outlook == pytest.approx(0.693, 0.001) # from presentations
 
+def test_information_gain_for_feature():
+    information_gain_for_outlook = ID3.get_information_gain_for_feature(test_dataset, "PlayGolf", "Outlook")
+    information_gain_for_temp = ID3.get_information_gain_for_feature(test_dataset, "PlayGolf", "Temp")
+    information_gain_for_humidity = ID3.get_information_gain_for_feature(test_dataset, "PlayGolf", "Humidity")
+    information_gain_for_windy = ID3.get_information_gain_for_feature(test_dataset, "PlayGolf", "Windy")
+
+    # all from presentations
+    assert information_gain_for_outlook == pytest.approx(0.247, 0.01)
+    assert information_gain_for_temp == pytest.approx(0.029, 0.01)
+    assert information_gain_for_humidity == pytest.approx(0.152, 0.01)
+    assert information_gain_for_windy == pytest.approx(0.048, 0.01)
+
+def test_information_gain_for_feature_with_no_entropy():
+    test_dataset_slice = test_dataset[test_dataset["Outlook"] == "Overcast"]
+    information_gain_for_temp = ID3.get_information_gain_for_feature(test_dataset_slice, "PlayGolf", "Temp")
+    information_gain_for_humidity = ID3.get_information_gain_for_feature(test_dataset_slice, "PlayGolf", "Humidity")
+    information_gain_for_windy = ID3.get_information_gain_for_feature(test_dataset_slice, "PlayGolf", "Windy")
+
+    # all from presentations
+    assert information_gain_for_temp == -inf
+    assert information_gain_for_humidity == -inf
+    assert information_gain_for_windy == -inf
+
+
 def assert_normal_tree_root(tree: Node): # for reuse later
     assert tree.feature_name == "Outlook"
     assert len(tree.feature_value_to_child) == 2
@@ -73,7 +97,6 @@ def assert_normal_rainy_node(rainy_node: Node):
 def test_ID3_tree_generation():
     test_model = ID3()
     test_model.train_model(test_dataset, "PlayGolf")
-
     tree: Node = test_model.tree
 
     # everything from presentations
