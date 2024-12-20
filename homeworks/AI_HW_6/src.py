@@ -178,7 +178,7 @@ kf = KFold(n_splits=10, shuffle=True)
 model_count = 0
 accuracies: list = []
 
-min_samples_split:int = 15 # getting best values with this. I guess
+min_samples_split: int = 15 # getting best values with this. I guess
 
 for train_index, validation_index in kf.split(training_dataset):
     train_fold, validation_fold = training_dataset.iloc[train_index], training_dataset.iloc[validation_index]

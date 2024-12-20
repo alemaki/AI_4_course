@@ -1,0 +1,4 @@
+#
+
+tests with pytest
+run with "pytest tests.py"
