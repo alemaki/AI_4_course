@@ -13,8 +13,23 @@ class NN():
 
         self.connect_layers()
 
-    def connect_layers(self):
-        assert(self.input_layer != None)
+    def connect_layers(self) -> None:
+        assert self.input_layer is not None
         for i, layer in enumerate(self.layers[1:]):
             layer.connect_previous_layer(self.layers[i]) # i starts with 0
-            
+    
+    """Returns index of neuron and value of prediction"""
+    def predict(self, value_list: list[float]) -> tuple[int, float]:
+        self.input_layer.set_values(value_list)
+        for i, layer in enumerate(self.layers[1:]):
+            prev_values: list[float] = self.layers[i].get_values()
+            layer.calculate_neuron_values(prev_values)
+        
+
+        output_values = self.output_layer.get_values()
+    
+        if len(output_values) == 1:
+            return (0, output_values[0])
+
+        value = max(output_values)
+        return (output_values.index(value), value)
