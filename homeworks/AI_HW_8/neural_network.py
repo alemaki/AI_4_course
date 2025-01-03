@@ -52,7 +52,11 @@ class NN():
             loss = NN.get_multiple_values_loss(predictions, class_index)
         return loss/2
     
-    def fit(self, x_train: np.ndarray, y_train: np.ndarray, epochs: int = 1, learning_rate: float = 0.01)  -> None:
+    def fit(self, x_train: np.ndarray, 
+            y_train: np.ndarray, 
+            epochs: int = 1, 
+            learning_rate: float = 0.01, 
+            no_print = False)  -> None:
         if isinstance(x_train, np.ndarray):
             x_train = x_train.tolist()
         if isinstance(y_train, np.ndarray):
@@ -67,7 +71,8 @@ class NN():
                 loss = self.calculate_loss(predictions, class_index)
                 total_loss += loss
                 self.backpropagate(predictions, class_index, learning_rate)
-        print(f"Epoch {epoch + 1}/{epochs}, Loss: {total_loss / len(x_train)}")
+            if not no_print:
+                print(f"Epoch {epoch + 1}/{epochs}, Loss: {total_loss / len(x_train)}")
 
     def backpropagate(self, predictions: list[float], class_index: int, learning_rate: float) -> None:
         output_errors = self.get_output_values_error(predictions, class_index)
@@ -79,4 +84,4 @@ class NN():
             next_layer = self.layers[l + 1]
             previous_layer = self.layers[l - 1]
             
-            output_errors = layer.backpropagate_layer(output_errors, previous_layer, next_layer, learning_rate)
+            output_errors = layer.backpropagate_layer(previous_layer, next_layer, learning_rate)
