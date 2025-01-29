@@ -1,0 +1,3 @@
+[submodule "project/marioAI"]
+	path = project/marioAI
+	url = https://github.com/alemaki/super_mario_bros_AI
