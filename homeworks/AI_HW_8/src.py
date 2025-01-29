@@ -111,7 +111,6 @@ def test_xor():
 
     fit_model(layers, x_train, y_train, "XOR")
 
-
 if and_or_or_or_xor == "and":
     test_and()
 elif and_or_or_or_xor == "or":
